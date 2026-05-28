@@ -8,7 +8,7 @@ const BORDER = "#1e1e1e";
 const MUTED = "#555";
 const TEXT = "#e8e8e8";
 
-const API = "https://178.105.156.74:5050"; // VPS backend — update if port changes
+const API = "https://api.clippr.org"; // VPS backend — update if port changes
 
 const FORMATS = [
   { id: "9:16", label: "9:16", sub: "TikTok / Reels", icon: "▌" },
