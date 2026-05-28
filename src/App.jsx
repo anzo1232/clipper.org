@@ -467,14 +467,16 @@ export default function ClipprApp() {
 
     try {
       // Try direct download via export endpoint
-      const params = new URLSearchParams({
-        session_id: sessionId || "",
-        clip_index: clip.clip_index ?? clips.indexOf(clip),
-        format,
-        filename: clip.filename || "",
+      const res = await fetch(`${API}/api/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId || "",
+          clip_index: clip.clip_index ?? clips.indexOf(clip),
+          format,
+          filename: clip.filename || "",
+        }),
       });
-
-      const res = await fetch(`${API}/api/export?${params}`);
       if (!res.ok) throw new Error(`Export failed: ${res.status}`);
 
       const blob = await res.blob();
