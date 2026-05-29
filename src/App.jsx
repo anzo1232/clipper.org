@@ -455,6 +455,7 @@ export default function ClipprApp() {
   };
 
   const handleDownload = async (clip, format) => {
+    const videoUrl = clip.video_url || clip.videoUrl || "";
     try {
       const start_s = clip.timestamp_start ?? 0;
       const end_s = clip.timestamp_end ?? (start_s + (clip.duration_s ?? 30));
