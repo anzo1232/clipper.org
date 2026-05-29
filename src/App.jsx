@@ -351,6 +351,7 @@ export default function ClipprApp() {
   const [streamer, setStreamer] = useState("");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
+  const [videoUrl, setVideoUrl] = useState("");
   const pollRef = useRef(null);
 
   const addLog = (msg, type = "info") => {
@@ -360,6 +361,7 @@ export default function ClipprApp() {
   };
 
   const handleStart = async (url, streamerName, keywords, windowS) => {
+    setVideoUrl(url);
     setLoading(true);
     setClips([]);
     setSelectedClip(null);
@@ -377,7 +379,7 @@ export default function ClipprApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          video_url: url,
+          video_url: videoUrl,
           streamer: streamerName || "streamer",
           keywords: keywords ? keywords.split(",").map(k => k.trim()).filter(Boolean) : [],
           window_s: windowS,
@@ -461,7 +463,7 @@ export default function ClipprApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          video_url: url,
+          video_url: videoUrl,
           start_s,
           duration,
           title: clip.title || `clip_${clip.clip_index ?? 0}`,
@@ -655,7 +657,7 @@ export default function ClipprApp() {
               clip={selectedClip}
               sessionId={sessionId}
               streamer={streamer}
-          videoUrl={url}
+          videoUrl={videoUrl}
               onDownload={handleDownload}
             />
           )}
