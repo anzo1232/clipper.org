@@ -396,45 +396,31 @@ export default function ClipprApp() {
       addLog(`Session started: ${sid}`, "info");
       addLog("Downloading VOD...", "info");
 
-      // Poll for progress
-      pollRef.current = setInterval(async () => {
-        try {
-          const evtRes = await fetch(`${API}/api/upload/events/${sid}`);
-          if (!evtRes.ok) return;
-          const evtData = await evtRes.json();
-
-          if (evtData.events) {
-            evtData.events.forEach(e => {
-              if (e.type === "phase") addLog(e.message, "info");
-              else if (e.type === "progress") {
-                setProgress(e.pct || 0);
-                if (e.message) addLog(e.message, "info");
-              } else if (e.type === "clip") {
-                addLog(`⚡ HIT [score:${e.score}] — ${e.title || "clip detected"}`, "hit");
-              } else if (e.type === "done") {
-                clearInterval(pollRef.current);
-                setLoading(false);
-                addLog(`✓ Done — ${e.clips_found || 0} clips found`, "hit");
-                fetchClips(sid);
-              } else if (e.type === "error") {
-                clearInterval(pollRef.current);
-                setLoading(false);
-                setError(e.message);
-                addLog(`✗ Error: ${e.message}`, "err");
-              }
-            });
-          }
-
-          // Also check if session is complete
-          if (evtData.status === "done") {
-            clearInterval(pollRef.current);
-            setLoading(false);
-            fetchClips(sid);
-          }
-        } catch (e) {
-          // polling error, keep trying
-        }
-      }, 2000);
+      // Open SSE stream for progress
+      pollRef.current = new EventSource(`${API}/api/upload/events/${sid}`);
+      pollRef.current.addEventListener("phase", (msg) => {
+        try { const d = JSON.parse(msg.data); addLog(d.message || d.phase || "phase", "info"); } catch {}
+      });
+      pollRef.current.addEventListener("download_progress", (msg) => {
+        try { const d = JSON.parse(msg.data); setProgress(d.pct || 0); if (d.message) addLog(d.message, "info"); } catch {}
+      });
+      pollRef.current.addEventListener("analysis_progress", (msg) => {
+        try { const d = JSON.parse(msg.data); setProgress(d.pct || 0); if (d.message) addLog(d.message, "info"); } catch {}
+      });
+      pollRef.current.addEventListener("done", () => {
+        addLog("Analysis complete", "info");
+        pollRef.current.close();
+        setLoading(false);
+        fetchClips(sid);
+      });
+      pollRef.current.addEventListener("error", (msg) => {
+        try { const d = JSON.parse(msg.data); addLog(`× ${d.message || "error"}`, "err"); } catch {}
+        pollRef.current.close();
+        setLoading(false);
+      });
+      pollRef.current.addEventListener("end", () => {
+        pollRef.current.close();
+      });
 
     } catch (err) {
       setLoading(false);
@@ -500,7 +486,7 @@ export default function ClipprApp() {
   };
 
   useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    return () => { if (pollRef.current) pollRef.current?.close?.(); };
   }, []);
 
   // Landing
@@ -590,7 +576,7 @@ export default function ClipprApp() {
           {readyCount > 0 && (
             <span style={{ fontSize: 10, color: ACCENT, fontFamily: "'Space Mono', monospace" }}>{readyCount} CLIPS</span>
           )}
-          <span onClick={() => { setView("landing"); clearInterval(pollRef.current); }} style={{ fontSize: 10, color: "#444", fontFamily: "'Space Mono', monospace", cursor: "pointer", letterSpacing: 1 }}>
+          <span onClick={() => { setView("landing"); pollRef.current?.close?.(); }} style={{ fontSize: 10, color: "#444", fontFamily: "'Space Mono', monospace", cursor: "pointer", letterSpacing: 1 }}>
             ← HOME
           </span>
         </div>
