@@ -465,6 +465,7 @@ export default function ClipprApp() {
         body: JSON.stringify({
           video_url: videoUrl,
           start_s,
+          end_s,
           duration,
           title: clip.title || `clip_${clip.clip_index ?? 0}`,
           format,
