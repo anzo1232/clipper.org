@@ -655,7 +655,6 @@ export default function ClipprApp() {
               clip={selectedClip}
               sessionId={sessionId}
               streamer={streamer}
-          videoUrl={url}
               onDownload={handleDownload}
             />
           )}
