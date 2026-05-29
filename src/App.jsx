@@ -464,7 +464,7 @@ export default function ClipprApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          video_url: url,
+          video_url: exportUrl,
           start_s,
           end_s,
           duration,
