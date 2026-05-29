@@ -453,7 +453,6 @@ export default function ClipprApp() {
   };
 
   const handleDownload = async (clip, format) => {
-    setDownloading(true);
     try {
       const start_s = clip.timestamp_start ?? 0;
       const end_s = clip.timestamp_end ?? (start_s + (clip.duration_s ?? 30));
@@ -483,8 +482,6 @@ export default function ClipprApp() {
       addLog(`Downloaded ${a.download}`, "hit");
     } catch (e) {
       addLog(`Export error: ${e.message}`, "err");
-    } finally {
-      setDownloading(false);
     }
   };
 
