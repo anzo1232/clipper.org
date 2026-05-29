@@ -407,12 +407,21 @@ export default function ClipprApp() {
       pollRef.current.addEventListener("analysis_progress", (msg) => {
         try { const d = JSON.parse(msg.data); setProgress(d.pct || 0); if (d.message) addLog(d.message, "info"); } catch {}
       });
-      pollRef.current.addEventListener("done", () => {
-        addLog("Analysis complete", "info");
-        pollRef.current.close();
-        setLoading(false);
-        fetchClips(sid);
-      });
+      pollRef.current.addEventListener("done", (msg) => {
+      try {
+        const d = JSON.parse(msg.data);
+        if (Array.isArray(d.clips)) {
+          setClips(d.clips);
+          addLog(`Found ${d.clips.length} clips`, "info");
+          if (d.clips.length > 0) setSelectedClip(d.clips[0]);
+        }
+      } catch (e) {
+        addLog(`Parse error: ${e.message}`, "err");
+      }
+      addLog("Analysis complete", "info");
+      pollRef.current.close();
+      setLoading(false);
+    });
       pollRef.current.addEventListener("error", (msg) => {
         try { const d = JSON.parse(msg.data); addLog(`× ${d.message || "error"}`, "err"); } catch {}
         pollRef.current.close();
@@ -444,44 +453,38 @@ export default function ClipprApp() {
   };
 
   const handleDownload = async (clip, format) => {
-    if (!sessionId && !clip.filename) {
-      addLog("No session or filename to download from", "err");
-      return;
-    }
-
-    addLog(`Exporting clip as ${format}...`, "info");
-
+    setDownloading(true);
     try {
-      // Try direct download via export endpoint
+      const start_s = clip.timestamp_start ?? 0;
+      const end_s = clip.timestamp_end ?? (start_s + (clip.duration_s ?? 30));
+      const duration = Math.max(1, end_s - start_s);
       const res = await fetch(`${API}/api/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          session_id: sessionId || "",
-          clip_index: clip.clip_index ?? clips.indexOf(clip),
+          video_url: url,
+          start_s,
+          duration,
+          title: clip.title || `clip_${clip.clip_index ?? 0}`,
           format,
-          filename: clip.filename || "",
         }),
       });
-      if (!res.ok) throw new Error(`Export failed: ${res.status}`);
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `clip_${format.replace(":", "x")}_${clip.clip_index ?? 0}.mp4`;
-      a.click();
-      URL.revokeObjectURL(url);
-      addLog(`✓ Downloaded clip in ${format}`, "hit");
-    } catch (e) {
-      // Fallback: try direct file download if backend has the file path
-      if (clip.filename) {
-        const url = `${API}/api/download/${clip.filename}`;
-        window.open(url, "_blank");
-        addLog(`Opening clip download...`, "info");
-      } else {
-        addLog(`✗ Download failed: ${e.message}`, "err");
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Export failed: ${res.status} ${errText}`);
       }
+      const blob = await res.blob();
+      const dlUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = dlUrl;
+      a.download = `${(clip.title || "clip").replace(/[^a-zA-Z0-9]/g, "_")}_${format.replace(":", "x")}.mp4`;
+      a.click();
+      URL.revokeObjectURL(dlUrl);
+      addLog(`Downloaded ${a.download}`, "hit");
+    } catch (e) {
+      addLog(`Export error: ${e.message}`, "err");
+    } finally {
+      setDownloading(false);
     }
   };
 
