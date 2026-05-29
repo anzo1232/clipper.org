@@ -373,11 +373,11 @@ export default function ClipprApp() {
     addLog(`Streamer: ${streamerName || "unknown"} · Window: ${windowS}s`, "info");
 
     try {
-      const res = await fetch(`${API}/api/analyse`, {
+      const res = await fetch(`${API}/api/upload/url`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          url,
+          video_url: url,
           streamer: streamerName || "streamer",
           keywords: keywords ? keywords.split(",").map(k => k.trim()).filter(Boolean) : [],
           window_s: windowS,
@@ -399,7 +399,7 @@ export default function ClipprApp() {
       // Poll for progress
       pollRef.current = setInterval(async () => {
         try {
-          const evtRes = await fetch(`${API}/api/session/${sid}/events`);
+          const evtRes = await fetch(`${API}/api/upload/events/${sid}`);
           if (!evtRes.ok) return;
           const evtData = await evtRes.json();
 
