@@ -379,7 +379,7 @@ export default function ClipprApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          video_url: url,
+          video_url: videoUrl,
           streamer: streamerName || "streamer",
           keywords: keywords ? keywords.split(",").map(k => k.trim()).filter(Boolean) : [],
           window_s: windowS,
@@ -455,7 +455,7 @@ export default function ClipprApp() {
   };
 
   const handleDownload = async (clip, format) => {
-    const exportUrl = videoUrl;
+    const videoUrl = clip.video_url || clip.videoUrl || "";
     try {
       const start_s = clip.timestamp_start ?? 0;
       const end_s = clip.timestamp_end ?? (start_s + (clip.duration_s ?? 30));
@@ -464,7 +464,7 @@ export default function ClipprApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          video_url: exportUrl,
+          video_url: videoUrl,
           start_s,
           end_s,
           duration,
